@@ -5,12 +5,14 @@ on:
     branches: [ main ]
     paths:
       - 'samples/**'
+      - 'src/**' 
   pull_request:
     types: [opened, synchronize, reopened]
 
 env:
   DOTNET_NOLOGO: true
-  VersionLabel: ${{ github.ref }}.${{ github.run_number }}
+  VersionLabel: ${{ github.ref }}
+  Configuration: Release
 
 defaults:
   run:
@@ -18,16 +20,39 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: 🤘 checkout
         uses: actions/checkout@v2
 
       - name: 🙏 build
         run: |
+          dotnet build -m:1
+          dotnet pack src/Package
           dotnet build ./samples/dotnet/
+          dotnet build src/App --output ./app
 
-      - name: 🚀 nuget
+      - name: 🧪 test
+        run: dotnet test --filter SponsorLink=true
+
+      - name: 🔓 login
+        if: github.ref == 'refs/heads/main'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 🚀 deploy
+        if: github.ref == 'refs/heads/main'
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_APPNAME }}
+          package: ./app
+
+      - name: 🚀 sleet
+        env:
+          SLEET_CONNECTION: ${{ secrets.SLEET_CONNECTION }}
+        if: env.SLEET_CONNECTION != ''
         run: |
           dotnet tool install -g --version 4.0.18 sleet 
+          sleet push bin --config none -f --verbose -p "SLEET_FEED_CONTAINER=nuget" -p "SLEET_FEED_CONNECTIONSTRING=${{ secrets.SLEET_CONNECTION }}" -p "SLEET_FEED_TYPE=azure" || echo "No packages found"
           sleet push ./samples/bin --config none -f --verbose -p "SLEET_FEED_CONTAINER=nuget" -p "SLEET_FEED_CONNECTIONSTRING=${{ secrets.SLEET_CONNECTION }}" -p "SLEET_FEED_TYPE=azure" || echo "No packages found"

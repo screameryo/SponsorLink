@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <RootNamespace>Devlooped.Tests</RootNamespace>
+    <!-- IVT+ThisAssembly -->
+    <NoWarn>CS0436;CS0435;NU1701</NoWarn>
+    <AddSyntheticProjectReferencesForSolutionDependencies>false</AddSyntheticProjectReferencesForSolutionDependencies>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.35.0" />
+    <PackageReference Include="Azure.Monitor.Query" Version="1.2.0" />
+    <PackageReference Include="DotNetConfig" Version="1.0.6" />
+    <PackageReference Include="LibGit2Sharp" Version="0.27.2" />
+    <PackageReference Include="Microsoft.Build.Tasks.Git" Version="1.1.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.32.3" />
+    <PackageReference Include="xunit" Version="2.5.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.0" />
+    <PackageReference Include="Moq" Version="4.20.69" />
+    <PackageReference Include="ScenarioTests.XUnit" Version="1.0.1" />
+    <PackageReference Include="ThisAssembly" Version="1.4.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" Pack="false" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Xunit.Abstractions" />
+    <EmbeddedResource Include="*.json;*.ini" Kind="Text" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Commands\Commands.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Devlooped.SponsorLink" Aliases="Analyzer" HintPath="..\Package\bin\$(Configuration)\netstandard2.0\Devlooped.SponsorLink.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="@(None)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RenderSourceRoots" AfterTargets="Build" DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+    <!-- Showcases how to get the current (git) repository root, via the Microsoft.Build.Tasks.Git package -->
+    <Message Importance="high" Text="@(SourceRoot -&gt; WithMetadataValue('SourceControl', 'git'))" />
+  </Target>
+
+  <Target Name="RenderEmail" AfterTargets="Build">
+    <!-- Showcases how to read the email via targets -->
+    <Exec Command="git config --get user.email" EchoOff="true" StandardErrorImportance="high" StandardOutputImportance="low" ConsoleToMSBuild="true" WorkingDirectory="$(MSBuildProjectDirectory)" ContinueOnError="true" StdOutEncoding="utf-8">
+      <Output TaskParameter="ConsoleOutput" PropertyName="Email" />
+      <Output TaskParameter="ExitCode" PropertyName="GitExitCode" />
+    </Exec>
+    <Message Condition="'$(GitExitCode)' == '0'" Importance="high" Text="Email='$(Email)'" />
+  </Target>
+
+</Project>
